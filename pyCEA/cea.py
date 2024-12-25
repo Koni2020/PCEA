@@ -9,7 +9,7 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-import proplot as pplt  # I strong suggest use high-level plot package to visualize
+import matplotlib.pyplot as plt  # I strong suggest use high-level plot package to visualize
 from pandas import DataFrame
 
 from cea_core import *
@@ -178,15 +178,15 @@ class CEA(object):
         :return:
         """
         if axes is None:
-            fig, axes = pplt.subplots(nrows=1, ncols=1, sharex=False, sharey=False, refaspect=3)
+            fig, axes = plt.subplots(nrows=1, ncols=1, sharex=False, sharey=False, refaspect=3)
 
         n = 1
         for i in range(self.n_var):
             si_normalize = (self.si[:, i] - self.si[:, i].min()) / (self.si[:, i].max() - self.si[:, i].min())
             axes.plot(self.time, si_normalize + n)
             n += 1
-        axes.format(xlocator=pplt.Locator('maxn', 5),
-                    **kwargs)
+        # axes.format(xlocator=pplt.Locator('maxn', 5),
+        #             **kwargs)
     def summary(self):
         """
 

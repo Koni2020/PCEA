@@ -21,10 +21,10 @@ For the installation of pyECA, the following packages are required:
 * [pandas]()
 * [numba]()
 ## Installation
-pyECA can be installed using pip\
+pyCEA can be installed using pip\
 ```pip install pyCEA```
 ## Usage
-Two quick examples of pyECA usage is as following. 
+Two quick examples of pyCEA usage is as following. 
 1. The data from data/demo.csv is read in, 
 where the columns represent different variables and the rows represent sampling times.
 ```python
@@ -56,3 +56,6 @@ cea = CEA(ts, delta=3, is_binary_array=True) # If the input is already a boolean
 # and the threshold parameter "threshold" is not required.
 ```
 More details can be seen in [`Demo.ipynb`](tutorial/compound_event_analysis.ipynb)
+
+## References:
+* [Donges J F, Schleussner C F, Siegmund J F, et al. Event coincidence analysis for quantifying statistical interrelationships between event time series: On the role of flood events as triggers of epidemic outbreaks[J]. The European Physical Journal Special Topics, 2016, 225: 471-487.](https://link.springer.com/article/10.1140/epjst/e2015-50233-y)

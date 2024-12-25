@@ -6,6 +6,8 @@ Update on 08 Jun 2023
 version: 0.1
 """
 from numpy import ndarray
+from numba import njit
+@njit()
 def find_compound_event(event_times: list[list[tuple]], max_gap: ndarray = None):
     """
     Calculate the conditional probabilities and the cascading event periods for the given event time ranges.
@@ -54,7 +56,7 @@ def find_compound_event(event_times: list[list[tuple]], max_gap: ndarray = None)
     return result
 
 
-# @njit()
+@njit()
 def find_consecutive(seq: list, delta: int, max_gap_length: int, max_gap_count: int) -> list[tuple]:
     """
     Find consecutive sequences of True values in a binary sequence, considering gaps between the sequences.
@@ -127,3 +129,5 @@ def apply_operator(a, b, op):
     else:
         raise ValueError(f"Unsupported operation combination: {op}, the valid is ('ge', 'le'), ('g', 'le'), "
                          f"('ge', 'l'), ('g', 'l')")
+
+# add two significant test possion and surrogate methods
