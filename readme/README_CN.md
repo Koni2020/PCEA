@@ -1,3 +1,4 @@
+[![](https://img.shields.io/badge/主页-pyCEA%2FREADME-orange)](https://github.com/Koni2020/pyCEA/blob/master/README.md)
 ## pyCEA是什么？
 
 pyCEA 是Python Compound Event Analysis 的缩写。pyCEA不仅能够识别特定阈值下信号内的事件还能识别事件的连级（复合事件）。信号可以为多种
