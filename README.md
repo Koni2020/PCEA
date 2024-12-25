@@ -1,24 +1,28 @@
 # What is the pyCEA?
-The liang-kleeman information flow causality test is used to detect causality between two time series. In a dynamic system, when information flow is transmitted between two entities in a specific way and often implies causality. Specifically, if the information flow rate between two time series events is close to zero, there is no causal relationship, vice versa.
+pyCEA stands for Python Compound Event Analysis. pyCEA is capable not only of identifying events within a signal under specific thresholds but also of detecting cascading events (compound events). The signals can be of various types, such as: El Niño–drought–wildfire cascading events, heatwave–drought compound events, or drought–flood compound
 # Dependencies
 For the installation of pyLiang, the following packages are required:
 * [numpy](https://numpy.org/)
+* [pandas]()
+* [numba]()
 # Installation
 pyLiang can be installed using pip\
-```pip install pyLiang```
+```pip install pyCEA```
 # Usage
 A quick example of pyLiang usage is as follow. 
 ```python
 import numpy as np
-from pyLiang import causality_est
+from pyCEA import CEA
+import pandas as pd
 
-# Data generation
-ts1 = np.random.rand(360,1)
-ts2 = np.random.rand(360,1)
+# 读入data/demo.csv的数据,该数据列表示不同变量，行代表采样时间。
+ts = pd.read_csv("./data/demo.csv", index_col=0, header=0)
 
-res = causality_est(ts1, ts2)
-print(res)
+cea = CEA(ts, delta=3, threshold=[-np.inf, -0.5], tau=3) # 关注小于-0.5即干旱部分, 窗口为3的干旱连级
+cea.run_cea() #运行复合事件分析
+
+cea.summary() # 输出运行结果到终端
+cea.event_trip_info.to_excel("变量单次事件信息.xlsx")
 ```
-# References
-1. San Liang X. Unraveling the cause-effect relation between time series[J]. Physical Review E, 2014, 90(5): 052150. doi:[10.1103/PhysRevE.90.052150](https://link.aps.org/doi/10.1103/PhysRevE.90.052150)
-2. San Liang X. Normalizing the causality between time series[J]. Physical Review E, 2015, 92(2): 022126. doi:[10.1103/PhysRevE.92.022126](https://link.aps.org/doi/10.1103/PhysRevE.92.022126)
+# README.md
+- zh_CN[简体中文](readme/README_CN.md)
