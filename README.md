@@ -36,7 +36,7 @@ import pandas as pd
 # variables and the rows represent sampling times.
 ts = pd.read_csv("./data/demo.csv", index_col=0, header=0)
 
-cea = CEA(ts, delta=3, threshold=[-np.inf, -0.5], tau=3) # 关注小于-0.5即干旱部分, 窗口为3的干旱连级
+cea = CEA(ts, delta=3, threshold=[-np.inf, -0.5], tau=3) 
 cea.run_cea() # run compound event analysis
 
 cea.summary() # print the running results to the terminal
