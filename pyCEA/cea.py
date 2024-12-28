@@ -9,7 +9,7 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-import matplotlib.pyplot as plt  # I strong suggest use high-level plot package to visualize
+import matplotlib.pyplot as plt
 from pandas import DataFrame
 
 from cea_core import *
@@ -159,7 +159,7 @@ class CEA(object):
         else:
             raise TypeError(f"{name} must be int, list, tuple, or ndarray.")
 
-    def run_cea(self):
+    def run_cea(self,):
         """
         run compound event analysis
         :return: None
@@ -214,7 +214,7 @@ class CEA(object):
 
     def __flag_compound_event(self):
         # 遍历所有相邻变量的组合 (例如 (ENSO, SPEI), (SPEI, WILDFIRE))
-
+        # significant test
         self.compound_event_trip_info = find_compound_event(self.event_trip_info, self.tau)
 
     def __summary_once_events(self):

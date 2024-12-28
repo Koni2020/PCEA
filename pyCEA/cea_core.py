@@ -7,8 +7,10 @@ version: 0.1
 """
 from numpy import ndarray
 from numba import njit
+
+
 @njit()
-def find_compound_event(event_times: list[list[tuple]], max_gap: ndarray = None):
+def find_compound_event(events: list[list[tuple]], tau_i, tau_o, tau_p, direction='both'):
     """
     Calculate the conditional probabilities and the cascading event periods for the given event time ranges.
 
@@ -18,42 +20,72 @@ def find_compound_event(event_times: list[list[tuple]], max_gap: ndarray = None)
     points) between consecutive events for them to be considered as a chain (cascade). :return: A list containing the
     conditional probability and the cascade periods for each pair of adjacent events.
     """
-    result = []
-    m = len(event_times)  # Number of variables
+    # A is forward to B  A leads B, B lags A
+    # A is backward to B A lags B, B leads A
+    from itertools import combinations, product
 
-    # Iterate over each pair of adjacent event lists (e.g., ENSO -> SPEI, SPEI -> WILDFIRE)
-    for i in range(m - 1):
-        cause_events = event_times[i]  # Current variable's event time periods
-        effect_events = event_times[i + 1]  # Next variable's event time periods
+    results = {"forward": [], "backward": []}
 
-        cause_count = 0  # Count of events in the cause
-        cause_and_effect_count = 0  # Count of events where both cause and effect happen
-        cascade_periods = []  # Store the periods where cascading events occur
+    # Generate all combinations of n variables
+    num_variables = len(events)
 
-        # Check for overlap or time gap between the events of the current variable and the next variable
-        for cause_start, cause_end in cause_events:
-            for effect_start, effect_end in effect_events:
-                # Check if the start of the effect event is within 2 time points before or after the end of the cause
-                # event
-                if (cause_end - max_gap[i] <= effect_start <= cause_end + max_gap[i]) or \
-                        (cause_start - max_gap[i] <= effect_end <= cause_start + max_gap[i]):  # Cascade happens
-                    cause_count += 1
-                    cause_and_effect_count += 1
-                    # Record the time period where cascading events happen
-                    overlap_start = max(cause_start, effect_start)
-                    overlap_end = min(cause_end, effect_end)
-                    cascade_periods.append((overlap_start, overlap_end))
+    for vars_comb in combinations(range(num_variables), num_variables):
+        variable_combinations = [events[idx] for idx in vars_comb]
 
-        # calculate conditional probability
-        if cause_count == 0:  # If no cause events happened, the probability is 0
-            conditional_probability = 0.0
-        else:
-            conditional_probability = cause_and_effect_count / cause_count
+        # Generate Cartesian product for all selected variables
+        for event_comb in product(*variable_combinations):
 
-        # append the conditional probability and cascade periods to the result
-        result.append([conditional_probability, cascade_periods])
+            if direction in ["both", "forward"]:
+                is_overlapping = all(
+                    max(event_comb[i][0], event_comb[j][0]) < min(event_comb[i][1], event_comb[j][1]) and
+                    abs(event_comb[i][1] - event_comb[j][0]) <= tau_o
+                    for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
+                )
 
-    return result
+                is_interval = all(
+                    (event_comb[i][1] < event_comb[j][0] and event_comb[j][0] - event_comb[i][1] <= tau_i)
+                    for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
+                )
+
+                is_containing = all(
+                    (event_comb[i][0] <= event_comb[j][0] and event_comb[i][1] >= event_comb[j][1] and
+                     (event_comb[i][1] - event_comb[j][1] <= tau_p) and
+                     (event_comb[j][0] - event_comb[i][0] <= tau_p))
+                    for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
+                )
+
+                # If at least one of the relationships is satisfied, save the result
+                if is_overlapping or is_interval or is_containing:
+                    results["forward"].append(event_comb)
+
+            if direction in ["both", "backward"]:
+                is_overlapping = all(
+                    max(event_comb[j][0], event_comb[i][0]) < min(event_comb[j][1], event_comb[i][1]) and
+                    abs(event_comb[j][1] - event_comb[i][0]) <= tau_o
+                    for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
+                )
+
+                is_interval = all(
+                    (event_comb[j][1] < event_comb[i][0] and event_comb[i][0] - event_comb[j][1] <= tau_i)
+                    for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
+                )
+
+                is_containing = all(
+                    (event_comb[j][0] <= event_comb[i][0] and event_comb[j][1] >= event_comb[i][1] and
+                     (event_comb[j][1] - event_comb[i][1] <= tau_p) and
+                     (event_comb[i][0] - event_comb[j][0] <= tau_p))
+                    for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
+                )
+
+                # If at least one of the relationships is satisfied, save the result
+                if is_overlapping or is_interval or is_containing:
+                    results["backward"].append(event_comb)
+
+    if direction == "forward":
+        return {"forward": results["forward"]}
+    elif direction == "backward":
+        return {"backward": results["backward"]}
+    return results
 
 
 @njit()
@@ -107,8 +139,6 @@ def find_consecutive(seq: list, delta: int, max_gap_length: int, max_gap_count: 
     return result_filter  # Return the filtered list of consecutive subsequences
 
 
-
-
 def apply_operator(a, b, op):
     """
     this function convert original signal to bool array
@@ -130,4 +160,4 @@ def apply_operator(a, b, op):
         raise ValueError(f"Unsupported operation combination: {op}, the valid is ('ge', 'le'), ('g', 'le'), "
                          f"('ge', 'l'), ('g', 'l')")
 
-# add two significant test possion and surrogate methods
+# add two significant test possion and methods

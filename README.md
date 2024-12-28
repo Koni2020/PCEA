@@ -10,8 +10,9 @@
 - [Documentation](readme/DOCUMENTATION_CN.md)
 - [README_ZN [简体中文]](readme/README_CN.md)
 ## What is the pyCEA?
-
+![compound events relationship](./readme/compound_events_relationship.svg)
 pyCEA is the abbreviation for Python Compound Event Analysis. 
+Compound events are defined as the superposition of events within a specific time window, exhibiting six types of relationships as illustrated in the figure.
 pyCEA is based on event analysis. It can identify events within signals based on specific thresholds and calculate the occurrence time, intensity, peak, and duration of those events. 
 It can also detect event chains (compound events) and calculate their probabilities. An event chain refers to two events that occur synchronously in time. 
 Examples include: El Niño—drought—wildfire chain events; heatwave—drought compound events; drought—flood compound events.
@@ -20,6 +21,7 @@ For the installation of pyECA, the following packages are required:
 * [numpy](https://numpy.org/)
 * [pandas]()
 * [numba]()
+
 ## Installation
 pyCEA can be installed using pip\
 ```pip install pyCEA```
@@ -55,7 +57,7 @@ cea = CEA(ts, delta=3, is_binary_array=True) # If the input is already a boolean
 # then you need to set "is_binary" to TRUE, 
 # and the threshold parameter "threshold" is not required.
 ```
-More details can be seen in [`Demo.ipynb`](tutorial/compound_event_analysis.ipynb)
+More examples can be seen in [`Jin et al (2025)`](tutorial/compound_event_analysis.ipynb)
 
 ## References:
 * [Donges J F, Schleussner C F, Siegmund J F, et al. Event coincidence analysis for quantifying statistical interrelationships between event time series: On the role of flood events as triggers of epidemic outbreaks[J]. The European Physical Journal Special Topics, 2016, 225: 471-487.](https://link.springer.com/article/10.1140/epjst/e2015-50233-y)
