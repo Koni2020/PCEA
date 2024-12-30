@@ -9,20 +9,25 @@ from __future__ import annotations
 import warnings
 
 import numpy as np
-import matplotlib.pyplot as plt
+import proplot as pplt
+from matplotlib.patches import Rectangle
 from pandas import DataFrame
-
+from numpy import ndarray
 from cea_core import *
 
 
 class CEA(object):
 
     def __init__(self, si: DataFrame | ndarray, threshold: ndarray | list | tuple = None,
-                 tau: int | list | tuple | ndarray = None,
                  delta: int | tuple | ndarray = None, operator: list | tuple = ('ge', 'le'),
                  max_gap_length: int | list | tuple | ndarray = None,
                  max_gap: int | list | tuple | ndarray = None,
-                 is_binary_array=False, get_compound_event=True):
+                 is_binary_array=False, get_compound_event=True,
+                 tau_i: int | ndarray = None,
+                 tau_o: int | ndarray = None,
+                 tau_p: int | ndarray = None,
+                 direction=None
+                 ):
         """
 
         :param si: (m x n) numpy array, m denotes time and n denotes variable (such as SPEI, SRI, SMI)
@@ -39,19 +44,30 @@ class CEA(object):
 
         self.si = si
         self.threshold = threshold
-        self.tau = tau if tau is not None else 1
+        # parameters of signal variable event identification
         self.delta = delta if delta is not None else 1
         self.operator = operator  # the threshold, False means it is below the threshold
         self.max_gap_length = max_gap_length if max_gap_length is not None else 1
         self.max_gap = max_gap if max_gap is not None else 1
-        self.is_binary_array = is_binary_array  # whether the input signal si is a bool matrix, True means it exceeds
-        self.get_compound = get_compound_event
 
         self.var_name = None
         self.time = None
-        self._validate_input()
+
+        # compound parameters
+        self.is_binary_array = is_binary_array  # whether the input signal si is a bool matrix, True means it exceeds
+        self.get_compound = get_compound_event
+        self.tau_i = tau_i if tau_i is not None else 6
+        self.tau_o = tau_o if tau_o is not None else 6
+        self.tau_p = tau_p if tau_p is not None else 1
+        self.direction = direction
+        # initial variable to store cea results
+
+        # the following is variable to store CEA results
         self.event_trip_info = None
         self.compound_event_trip_info = None
+        self.coincident_rate = None
+
+        self._validate_input()
 
     def _validate_input(self):
         # the following is safety check for parameter si
@@ -84,7 +100,7 @@ class CEA(object):
                     f', and event threshold {type(self.threshold)} is not valid type, threshold should be numpy.ndarray, list or tuple')
             else:
                 if isinstance(self.threshold, ndarray):
-                    if (self.threshold.ndim <= 2) and (self.threshold[0] != 2):
+                    if (self.threshold.ndim <= 2) and (self.threshold.shape[1] != 2):
                         if self.threshold.ndim == 1:
                             if self.threshold.size != 2:
                                 raise ValueError(
@@ -97,7 +113,8 @@ class CEA(object):
                                     f"only provide {self.threshold[0] / 2} threshold {self.threshold}, but there is {self.n_var} "
                                     f"variables: {self.var_name}")
 
-
+                    elif self.threshold.ndim == 2:
+                        pass
                     else:
                         raise ValueError(f"too manny thresholds {self.threshold}")
 
@@ -121,9 +138,13 @@ class CEA(object):
             if i not in valid_operators:
                 raise ValueError(f"'{i}' is not a valid relational operator. Valid operators are: g, ge, l, le.")
 
-        # Safety check for parameter tau
-        if self.tau is not None:
-            self.tau = self._check_param(self.tau, "tau")
+        # Safety check for compound event parameter tau
+        if self.tau_i is not None:
+            self.tau_i = self.__check_compound_param(self.tau_i, "tau_i")
+        if self.tau_o is not None:
+            self.tau_o = self.__check_compound_param(self.tau_o, "tau_o")
+        if self.tau_p is not None:
+            self.tau_p = self.__check_compound_param(self.tau_p, "tau_p")
 
         # Safety check for parameter delta
         if self.delta is not None:
@@ -136,6 +157,18 @@ class CEA(object):
         # Safety check for parameter max_gap
         if self.max_gap is not None:
             self.max_gap = self._check_param(self.max_gap, "max_gap")
+
+    def __check_compound_param(self, param, name):
+        if isinstance(param, int):
+            return np.full([self.n_var, self.n_var], param)
+        elif isinstance(param, np.ndarray):
+            if param.ndim != 2:
+                raise ValueError(f"{name} dimensions must be <= 2.")
+            if param.ndim == 2:
+                if param.shape != (self.n_var, self):
+                    raise ValueError(f"{name} shape must ({self.n_var}, {self.n_var}).")
+        else:
+            raise TypeError(f"{name} must be int, list, tuple, or ndarray.")
 
     def _check_param(self, param, name):
         if isinstance(param, (list, tuple)):
@@ -159,39 +192,105 @@ class CEA(object):
         else:
             raise TypeError(f"{name} must be int, list, tuple, or ndarray.")
 
-    def run_cea(self,):
+    def run_cea(self,
+                verbose=True,
+                save_path=None):
         """
         run compound event analysis
         :return: None
         """
+
         self.__flag_event()
-        self.__summary_once_events()
+        self.__summary_one_variable_events()
         if self.get_compound:
             self.__flag_compound_event()
         else:
             pass
 
-    def plot_signal(self, axes=None, **kwargs):
+        self.__summary_compound_events()
+
+        if save_path is not None:
+            pointer = pd.ExcelWriter(save_path)
+            self.one_variable_events_statistic.to_excel(pointer, sheet_name='one_variable')
+            if self.direction in ["backward", "both"]:
+                self.backward_compound_events_statistic.to_excel(pointer, sheet_name="backward")
+            if self.direction in ["forward", "both"]:
+                self.forward_compound_events_statistic.to_excel(pointer, sheet_name="forward")
+            pointer.close()
+        self.__calc_coincidence_rate()
+        # significant test base surrogate datasets (routine of R coincidence package)
+    def plot_signal(self, relationship='all', fig=None, axes=None, **kwargs):
         """
         plot each variable in a figure
         :param axes:
         :return:
         """
+        if self.event_trip_info is None and self.compound_event_trip_info is None:  # make sure already have cea results
+            self.run_cea()
+
         if axes is None:
-            fig, axes = plt.subplots(nrows=1, ncols=1, sharex=False, sharey=False, refaspect=3)
+            fig, axes = pplt.subplots(nrows=self.n_var, ncols=1, sharex=False, sharey=False, refaspect=3)
 
-        n = 1
+        variable_event_info = self.one_variable_events_statistic
+        bounds = [-abs(variable_event_info['strength'].min()), abs(variable_event_info['strength'].min())]
+        variable_event_info = variable_event_info.set_index('var')
         for i in range(self.n_var):
-            si_normalize = (self.si[:, i] - self.si[:, i].min()) / (self.si[:, i].max() - self.si[:, i].min())
-            axes.plot(self.time, si_normalize + n)
-            n += 1
-        # axes.format(xlocator=pplt.Locator('maxn', 5),
-        #             **kwargs)
-    def summary(self):
-        """
+            ax = axes[i]
+            one_variable_info = variable_event_info.loc[self.var_name[i], :]
+            one_variable_info.index = range(one_variable_info.shape[0])
 
-        :return:
-        """
+            idx_interval_total = []
+            idx_intersect_total = []
+            idx_containing_total = []
+
+            if self.direction in ['both', 'backward']:
+                idx_intersect = self.compound_event_trip_info['backward']['intersect']
+                idx_containing = self.compound_event_trip_info['backward']['containing']
+                idx_interval = self.compound_event_trip_info['backward']['idx_interval']
+                idx_intersect = [x[i] for x in idx_intersect]
+                idx_containing = [x[i] for x in idx_containing]
+                idx_interval = [x[i] for x in idx_interval]
+
+                idx_interval_total.extend(idx_interval)
+                idx_intersect_total.extend(idx_intersect)
+                idx_containing_total.extend(idx_containing)
+            if self.direction in ['both', 'forward']:
+                idx_intersect = self.compound_event_trip_info['forward']['intersect']
+                idx_containing = self.compound_event_trip_info['forward']['containing']
+                idx_interval = self.compound_event_trip_info['forward']['interval']
+                idx_intersect = [x[i] for x in idx_intersect]
+                idx_containing = [x[i] for x in idx_containing]
+                idx_interval = [x[i] for x in idx_interval]
+                idx_interval_total.extend(idx_interval)
+                idx_intersect_total.extend(idx_intersect)
+                idx_containing_total.extend(idx_containing)
+
+            for j in one_variable_info.index:
+                x0, x1 = one_variable_info.loc[j, 'index_start'], one_variable_info.loc[j, 'index_end']
+                height = one_variable_info.loc[j, 'strength']
+                if height >= 0:
+                    fc = 'tab:orange'
+                else:
+                    fc = 'tab:blue'
+                hatch = None
+                if (x0, x1) in idx_containing_total:
+                    hatch = '////'
+                if (x0, x1) in idx_interval_total:
+                    hatch =  'xxxx'
+                if (x0, x1) in idx_intersect_total:
+                    hatch = '++++'
+                if hatch is not  None:
+                    rect = Rectangle((x0, 0), x1 - x0, height, facecolor=fc, edgecolor='k', hatch=hatch)
+                else:
+                    rect = Rectangle((x0, 0), x1 - x0, height, facecolor=fc, edgecolor='k')
+
+                ax.add_patch(rect)
+            ax.format(ylabel=self.var_name[i],
+                      xlim=(0, self.n_sample),
+                      ylim=bounds)
+            ax.hlines(0, 0, self.n_sample, lw=0.5, color='k')
+        return fig, axes
+
 
     def __flag_event(self):
         """
@@ -213,33 +312,95 @@ class CEA(object):
         self.event_trip_info = event_trip_info
 
     def __flag_compound_event(self):
-        # 遍历所有相邻变量的组合 (例如 (ENSO, SPEI), (SPEI, WILDFIRE))
-        # significant test
-        self.compound_event_trip_info = find_compound_event(self.event_trip_info, self.tau)
 
-    def __summary_once_events(self):
+
+        # The variable 'cea_result1' contains specific relationships.
+        # The variable 'cea_results2' contains the overall index of compound events.
+        cea_results = find_compound_event(self.event_trip_info, self.tau_i, self.tau_o, self.tau_p,
+                                                         direction=self.direction)
+        self.compound_event_trip_info = cea_results
+
+    def __summary_one_variable_events(self):
+        """
+
+        :return:
+        """
         results_ = []
         for i in range(self.n_var):
             idx = self.event_trip_info[i]
-            results_container = pd.DataFrame(columns=["var", 'time', 'peak', 'duration', 'strength'])
+            results_container = pd.DataFrame(columns=['var', 'event_start', 'event_end', 'peak', 'duration', 'strength', "index_start", "index_end"])
             for jhat, j in enumerate(idx):
                 if ((j[1] - j[0]) == 0) and self.delta[i] == 1:
                     event_sig = self.si[j[0], i]  # only one value
                 else:
                     event_sig = self.si[slice(*j), i]
-
+                if self.delta[i] == 1 and isinstance(event_sig, float):
+                    event_sig = np.array([event_sig])
                 peak = event_sig[np.argmax(np.abs(event_sig))]
                 duration = event_sig.size
                 strength = event_sig.mean()
                 results_container.loc[jhat, 'var'] = self.var_name[i]
-                results_container.loc[jhat, 'time'] = f"{self.time[j[0]]}-{self.time[j[1]]}"
+                results_container.loc[jhat, "evnet_start"] = self.time[j[0]]
+                results_container.loc[jhat, "event_end"] = self.time[j[1]]
+
+                results_container.loc[jhat, 'index_start'] = j[0]
+                results_container.loc[jhat, "index_end"] =j[1]
                 results_container.loc[jhat, 'peak'] = peak
                 results_container.loc[jhat, 'duration'] = duration
                 results_container.loc[jhat, 'strength'] = strength
             results_.append(results_container)
         results_ = pd.concat(results_)
-        self.once_events_statistic = results_
 
+        self.one_variable_events_statistic = results_
+
+    def __summary_compound_events(self):
+        """
+        :save_path: the path save cea results
+        This function convert compound results to DataFrame
+        :return: None
+        """
+        def __core_dict2frame(arr, var_name):
+            columns = [f"{x}_{i}" for x in var_name for i in ["start", "end"]]
+            columns.extend(["relationship"])
+            container = pd.DataFrame(columns=columns)
+            n = 0
+            for i in arr:
+                arr_ = arr[i]
+                for j in arr_:
+                    arr__ = np.array(j)
+                    arr__ = np.ravel(arr__)
+                    time__ = self.time[arr__]
+                    container.loc[n, 'relationship'] = i
+                    container.loc[n, columns[:-1]] = time__
+                    n += 1
+            return container
+        df_backward = __core_dict2frame(self.compound_event_trip_info['backward'], self.var_name)
+        df_forward = __core_dict2frame(self.compound_event_trip_info['forward'], self.var_name)
+        self.forward_compound_events_statistic = df_forward
+        self.backward_compound_events_statistic = df_backward
+
+    def __calc_coincidence_rate(self):
+
+        coincidence_rate_backward = pd.DataFrame(columns=["interval", "intersect", "containing", "total"])
+        coincidence_rate_forward = pd.DataFrame(columns=["interval", "intersect", "containing", "total"])
+        for i in range(self.n_var):
+            sample_var_length = len(self.event_trip_info[i])
+            if self.direction in ["both", "backward"]:
+                sample_intersect_length = len(self.compound_event_trip_info['backward']['intersect'])
+                sample_containing_length = len(self.compound_event_trip_info["backward"]["containing"])
+                sample_interval_length = len(self.compound_event_trip_info["backward"]['interval'])
+                total_sample_length = sample_containing_length + sample_intersect_length + sample_interval_length
+                coincidence_rate_backward.loc[self.var_name[i], :] = [x / sample_var_length for x in [sample_interval_length, sample_intersect_length, sample_containing_length, total_sample_length]]
+            if self.direction in ["both", 'forward']:
+                sample_intersect_length = len(self.compound_event_trip_info['forward']['intersect'])
+                sample_containing_length = len(self.compound_event_trip_info["forward"]["containing"])
+                sample_interval_length = len(self.compound_event_trip_info["forward"]['interval'])
+                total_sample_length = sample_containing_length + sample_intersect_length + sample_interval_length
+                coincidence_rate_forward.loc[self.var_name[i], :] = [x / sample_var_length for x in
+                                                                    [sample_interval_length, sample_intersect_length,
+                                                                     sample_containing_length, total_sample_length]]
+        self.forward_coincidence_rate = coincidence_rate_forward
+        self.backward_coincidence_rate = coincidence_rate_backward
 
 if __name__ == '__main__':
     import pandas as pd
@@ -249,5 +410,11 @@ if __name__ == '__main__':
         index_col=0,
         header=0)
     ts = ts.dropna()
-    ts = ts.iloc[:, [0, 1, 2]]
-    CEA(ts, np.array([-np.inf, -0.5]), is_binary_array=False, max_gap=1, max_gap_length=1, delta=3).run_cea()
+    ts = ts.iloc[:, [0]]
+    ts = pd.concat([ts, ts], axis=1)
+
+    ts.columns = ['var1', 'var2']
+    cea = CEA(ts, is_binary_array=False, max_gap=1, max_gap_length=1, delta=1, direction="forward",
+              threshold=np.array([[-np.inf, -0.5], [0.5, np.inf]]), tau_i=1)
+    fig, axes = cea.plot_signal(relationship='interval')
+    fig.save('../data/test.png')

@@ -11,7 +11,7 @@
 - [README](../README.md)
 
 ## pyCEA是什么？
-
+![compound events relationship](compound_events_relationship.svg)
 pyCEA 是 Python Compound Event Analysis 的缩写。pyCEA以事件分析为基础，识别变量间的事件及其复合，事件复合连级指时间上变量间同步发生。例如：厄尔尼诺—干旱—野火连级事件；热浪—干旱复合事件；干旱—洪涝复合事件。\
 它与R包[`CoinCalc`](https://github.com/JonatanSiegmund/CoinCalc)在一定程度上相似，但存在不同。
 - 单独事件上，pyCEA考虑更多参数，允许变量事件中断。它能够识别特定阈值下，每个变量事件出发生的时间，强度，峰值，持续时间。

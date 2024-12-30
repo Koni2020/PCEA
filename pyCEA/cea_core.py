@@ -1,16 +1,14 @@
 """
 This is core utils in pyCEA package.
-Created on 08 Jun 2023
-Update on 08 Jun 2023
+Created on 26 Oct 2024
+Update on 26 Oct 2023
 @author: Hanyu Jin
 version: 0.1
 """
-from numpy import ndarray
-from numba import njit
 
 
-@njit()
-def find_compound_event(events: list[list[tuple]], tau_i, tau_o, tau_p, direction='both'):
+# @njit()
+def find_compound_event(events: list[list[tuple]], tau_i, tau_o, tau_p, direction):
     """
     Calculate the conditional probabilities and the cascading event periods for the given event time ranges.
 
@@ -22,13 +20,20 @@ def find_compound_event(events: list[list[tuple]], tau_i, tau_o, tau_p, directio
     """
     # A is forward to B  A leads B, B lags A
     # A is backward to B A lags B, B leads A
+    # tau_i, tau_o, tau_p are parameters of interval intersect and overlap. The matrix of n_var x n_var
+
     from itertools import combinations, product
 
-    results = {"forward": [], "backward": []}
+    results = {"forward": {"intersect": [], "containing": [], "interval": []},
+               "backward": {"intersect": [], "containing": [], "interval": []}}  # store base on relationship
+
+    # results_total = {"forward": [],
+    #                  "backward": []}
 
     # Generate all combinations of n variables
     num_variables = len(events)
-
+    # if the n_var contains such as [ENSO, SPEI, SRI], "find_compound_event"
+    # will iterate all combination ([ENSO, SPEI], [ENSO, SRI], [SPEI, SRI])
     for vars_comb in combinations(range(num_variables), num_variables):
         variable_combinations = [events[idx] for idx in vars_comb]
 
@@ -36,59 +41,75 @@ def find_compound_event(events: list[list[tuple]], tau_i, tau_o, tau_p, directio
         for event_comb in product(*variable_combinations):
 
             if direction in ["both", "forward"]:
-                is_overlapping = all(
-                    max(event_comb[i][0], event_comb[j][0]) < min(event_comb[i][1], event_comb[j][1]) and
-                    abs(event_comb[i][1] - event_comb[j][0]) <= tau_o
+
+                # event_comb[i] is event A, event_comb[j] is event B. index 0 and 1 are start and end of events
+
+                is_intersect = (
+                    event_comb[j][1] > event_comb[i][1] > event_comb[j][0] > event_comb[i][0] and abs(
+                        event_comb[i][1] - event_comb[j][0]) < tau_o[i, j]
                     for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
                 )
 
-                is_interval = all(
-                    (event_comb[i][1] < event_comb[j][0] and event_comb[j][0] - event_comb[i][1] <= tau_i)
+                # interval should be end of B minus start of A
+                is_interval = (
+                    event_comb[i][1] < event_comb[j][0] and abs(event_comb[i][1] - event_comb[j][0]) < tau_i[i, j]
                     for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
                 )
 
-                is_containing = all(
-                    (event_comb[i][0] <= event_comb[j][0] and event_comb[i][1] >= event_comb[j][1] and
-                     (event_comb[i][1] - event_comb[j][1] <= tau_p) and
-                     (event_comb[j][0] - event_comb[i][0] <= tau_p))
+                is_containing = (
+                    event_comb[i][0] <= event_comb[j][0] and event_comb[i][1] >= event_comb[j][1] and abs(
+                        event_comb[j][1] - event_comb[j][0]) >= tau_p[i, j]
                     for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
                 )
+
+                if all(is_intersect):
+                    results["forward"]["intersect"].append(event_comb)
+
+                if all(is_interval):
+                    results["forward"]["interval"].append(event_comb)
+
+                if all(is_containing):
+                    results["forward"]["containing"].append(event_comb)
 
                 # If at least one of the relationships is satisfied, save the result
-                if is_overlapping or is_interval or is_containing:
-                    results["forward"].append(event_comb)
+                # if all(is_intersect) or all(is_interval) or all(is_containing):
+                #     results_total["forward"].append(event_comb)
 
             if direction in ["both", "backward"]:
-                is_overlapping = all(
-                    max(event_comb[j][0], event_comb[i][0]) < min(event_comb[j][1], event_comb[i][1]) and
-                    abs(event_comb[j][1] - event_comb[i][0]) <= tau_o
+                is_intersect = (
+                    event_comb[i][1] > event_comb[j][1] > event_comb[i][0] > event_comb[j][0] and abs(
+                        event_comb[j][1] - event_comb[i][0]) < tau_o[i, j]
                     for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
                 )
 
-                is_interval = all(
-                    (event_comb[j][1] < event_comb[i][0] and event_comb[i][0] - event_comb[j][1] <= tau_i)
+                # interval should be end of B minus start of A
+                is_interval = (
+                    event_comb[j][1] < event_comb[i][0] and abs(event_comb[j][1] - event_comb[i][0]) < tau_i[i, j]
                     for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
                 )
 
-                is_containing = all(
-                    (event_comb[j][0] <= event_comb[i][0] and event_comb[j][1] >= event_comb[i][1] and
-                     (event_comb[j][1] - event_comb[i][1] <= tau_p) and
-                     (event_comb[i][0] - event_comb[j][0] <= tau_p))
+                is_containing = (
+                    event_comb[j][0] <= event_comb[i][0] and event_comb[j][1] >= event_comb[i][1] and abs(
+                        event_comb[i][1] - event_comb[i][0]) >= tau_p[i, j]
                     for i in range(len(event_comb)) for j in range(i + 1, len(event_comb))
                 )
 
                 # If at least one of the relationships is satisfied, save the result
-                if is_overlapping or is_interval or is_containing:
-                    results["backward"].append(event_comb)
+                if all(is_intersect):
+                    results["backward"]["intersect"].append(event_comb)
 
-    if direction == "forward":
-        return {"forward": results["forward"]}
-    elif direction == "backward":
-        return {"backward": results["backward"]}
+                if all(is_interval):
+                    results["backward"]["interval"].append(event_comb)
+
+                if all(is_containing):
+                    results["backward"]["containing"].append(event_comb)
+
+                # if all(is_intersect) or all(is_interval) or all(is_containing):
+                #     results_total["backward"].append(event_comb)
+
     return results
 
-
-@njit()
+# @njit()
 def find_consecutive(seq: list, delta: int, max_gap_length: int, max_gap_count: int) -> list[tuple]:
     """
     Find consecutive sequences of True values in a binary sequence, considering gaps between the sequences.

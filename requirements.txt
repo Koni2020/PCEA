@@ -2,5 +2,4 @@ numpy~=1.26.4
 proplot~=0.9.7
 pandas~=2.2.2
 setuptools~=75.1.0
-matplotlib~=3.9.2
-numba~=0.60.0
+matplotlib~=3.4.2
