@@ -20,7 +20,7 @@ setup(
     url="https://github.com/Koni2020/PCEA",
     packages=["PCEA"],
     license=__license__,
-    install_requires=["numpy", "pandas"],
+    install_requires=["numpy", "pandas", "proplot"],
     classifiers=[
         "Programming Language :: Python :: 3.10",
         "License :: OSI Approved :: MIT License",
