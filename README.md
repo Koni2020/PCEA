@@ -23,7 +23,7 @@ For the installation of pyECA, the following packages are required:
 * [numba]()
 
 ## Installation
-pyCEA can be installed using pip\
+PCEA can be installed using pip\
 ```pip install PCEA```
 ## Usage
 Two quick examples of pyCEA usage is as following. 
