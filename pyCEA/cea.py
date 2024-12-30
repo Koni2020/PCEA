@@ -94,10 +94,10 @@ class CEA(object):
         # the following is safety check for parameter threshold
 
         if self.threshold is not None:
-            if (not isinstance(self.threshold, ndarray)) and (not isinstance(self.si, list)) and (
-                    not isinstance(self.si, tuple)) and (not self.is_binary_array):
+            if (not isinstance(self.threshold, ndarray)) and (not isinstance(self.threshold, list)) and (
+                    not isinstance(self.threshold, tuple)) and (not self.is_binary_array):
                 raise TypeError(
-                    f', and event threshold {type(self.threshold)} is not valid type, threshold should be numpy.ndarray, list or tuple')
+                    f'event threshold {type(self.threshold)} is not valid type, threshold should be numpy.ndarray, list or tuple')
             else:
                 if isinstance(self.threshold, ndarray):
                     if (self.threshold.ndim <= 2) and (self.threshold.shape[1] != 2):
@@ -415,6 +415,6 @@ if __name__ == '__main__':
 
     ts.columns = ['var1', 'var2']
     cea = CEA(ts, is_binary_array=False, max_gap=1, max_gap_length=1, delta=1, direction="forward",
-              threshold=np.array([[-np.inf, -0.5], [0.5, np.inf]]), tau_i=1)
+              threshold=[-np.inf, -0.5], tau_i=1)
     fig, axes = cea.plot_signal(relationship='interval')
     fig.save('../data/test.png')

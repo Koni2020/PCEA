@@ -37,12 +37,9 @@ import pandas as pd
 # Read the data in data/demo.csv, where the columns represent different 
 # variables and the rows represent sampling times.
 ts = pd.read_csv("./data/demo.csv", index_col=0, header=0)
-
-cea = CEA(ts, delta=3, threshold=[-np.inf, -0.5], tau=3) 
-cea.run_cea() # run compound event analysis
-
-cea.summary() # print the running results to the terminal
-cea.event_trip_info.to_excel("event_statistics.xlsx")
+ts = ts.iloc[:, [0, 1]]
+cea = CEA(ts, delta=6, threshold=[-np.inf, -0.5]) 
+cea.run_cea(save_path='./data/resuls.xlsx') # run compound event analysis
 ```
 2. Input a boolean matrix of size m x n.
 
@@ -54,6 +51,7 @@ ts = np.random.choice([True, False], [720, 3]) # Generate a boolean matrix,
 # where True represents the occurrence of an event.
 
 cea = CEA(ts, delta=3, is_binary_array=True) # If the input is already a boolean matrix,
+cea.run_cea(save_path='./data/resuls.xlsx') # run compound event analysis
 # then you need to set "is_binary" to TRUE, 
 # and the threshold parameter "threshold" is not required.
 ```
