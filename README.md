@@ -3,7 +3,7 @@
 ![](https://img.shields.io/badge/Python-3.10-blue)
 ![](https://img.shields.io/badge/Status-Building-green)
 ## Catalog
-- [Introduction of PECA](#what-is-the-pycea)
+- [Introduction of PCEA](#what-is-the-pycea)
 - [Installation](#installation)
 - [Dependencies](#dependencies)
 - [Usage](#usage)
