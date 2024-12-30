@@ -1,7 +1,7 @@
 import pandas as pd
-from cea import CEA
+from .cea import CEA
 import numpy as np
-def pyCEA_test():
+def PCEA_test():
     ts = pd.read_csv(
         r"../data/demo.csv",
         index_col=0,

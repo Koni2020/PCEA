@@ -17,7 +17,7 @@ setup(
     description=("A python package for compound event analysis."),
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Koni2020/pyCEA",
+    url="https://github.com/Koni2020/PCEA",
     packages=["PCEA"],
     license=__license__,
     install_requires=["numpy", "pandas"],
