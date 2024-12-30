@@ -13,7 +13,7 @@ import proplot as pplt
 from matplotlib.patches import Rectangle
 from pandas import DataFrame
 from numpy import ndarray
-from cea_core import *
+from .cea_core import *
 
 
 class CEA(object):
