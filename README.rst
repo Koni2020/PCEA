@@ -8,15 +8,6 @@ PCEA
 
 .. image:: https://img.shields.io/badge/Status-Building-green
 
-Catalog
--------
-
-- `What is PCEA? <#what-is-pycea>`_
-- `Installation <#installation>`_
-- `Dependencies <#dependencies>`_
-- `Usage <#usage>`_
-- `Documentation <readme/DOCUMENTATION_CN.md>`_
-- `README_ZN [Chinese] <readme/README_CN.md>`_
 
 What is PCEA?
 --------------
@@ -52,27 +43,38 @@ Here are two quick examples of using pyCEA:
 
 1. Reading data from a CSV file::
 
-   import numpy as np
-   from PCEA import CEA
-   import pandas as pd
+      import numpy as np
+      from PCEA import CEA
+      import pandas as pd
 
-   # Read data from demo.csv, where columns represent variables and rows represent sampling times.
-   ts = pd.read_csv("./data/demo.csv", index_col=0, header=0)
-   ts = ts.iloc[:, [0, 1]]
-   cea = CEA(ts, delta=6, threshold=[-np.inf, -0.5])
-   cea.run_cea(save_path='./data/resuls.xlsx')  # Run compound event analysis
+      # Read data from demo.csv, where columns represent variables and rows represent sampling times.
+      # Ensure that demo.csv exists and has numerical data.
+      ts = pd.read_csv("./data/demo.csv", index_col=0, header=0)
+
+      # Select specific columns for analysis
+      ts = ts.iloc[:, [0, 1]]
+
+      # Create a CEA instance with specified parameters
+      cea = CEA(ts, delta=6, threshold=[-np.inf, -0.5])
+
+      # Run compound event analysis and save the results to an Excel file
+      cea.run_cea(save_path='./data/results.xlsx')
 
 2. Input a boolean matrix::
 
-   from PCEA import CEA
-   import numpy as np
+      import numpy as np
+      from PCEA import CEA
 
-   ts = np.random.choice([True, False], [720, 3])  # Generate a boolean matrix
+      # Generate a boolean matrix (720 rows by 3 columns)
+      ts = np.random.choice([True, False], [720, 3])
 
-   cea = CEA(ts, delta=3, is_binary_array=True)  # Set "is_binary_array" to True for boolean input
-   cea.run_cea(save_path='./data/resuls.xlsx')  # Run compound event analysis
+      # Create a CEA instance for boolean input, setting `is_binary_array` to True
+      cea = CEA(ts, delta=3, is_binary_array=True)
 
-More examples can be found in `Jin et al. (2025) <tutorial/compound_event_analysis.ipynb>`_.
+      # Run compound event analysis and save the results to an Excel file
+      cea.run_cea(save_path='./data/results.xlsx')
+
+More examples can be found in `Github <https://github.com/Koni2020/PCEA/blob/master/README.md>`_.
 
 References
 ----------
