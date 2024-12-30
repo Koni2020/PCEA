@@ -1,5 +1,5 @@
 """
-This is core utils in pyCEA package.
+This is core utils in PCEA package.
 Created on 26 Oct 2024
 Update on 26 Oct 2023
 @author: Hanyu Jin

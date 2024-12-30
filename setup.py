@@ -10,7 +10,7 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="pyCEA",
+    name="PCEA",
     version=__version__,
     author=__author__,
     author_email=__email__,
@@ -18,7 +18,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Koni2020/pyCEA",
-    packages=["pyCEA"],
+    packages=["PCEA"],
     license=__license__,
     install_requires=["numpy", "pandas"],
     classifiers=[

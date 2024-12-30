@@ -1,4 +1,4 @@
-pyCEA
+PCEA
 =====
 
 .. image:: https://img.shields.io/badge/Host-pyCEA%2FREADME-orange
@@ -11,14 +11,14 @@ pyCEA
 Catalog
 -------
 
-- `What is pyCEA? <#what-is-pycea>`_
+- `What is PCEA? <#what-is-pycea>`_
 - `Installation <#installation>`_
 - `Dependencies <#dependencies>`_
 - `Usage <#usage>`_
 - `Documentation <readme/DOCUMENTATION_CN.md>`_
 - `README_ZN [Chinese] <readme/README_CN.md>`_
 
-What is pyCEA?
+What is PCEA?
 --------------
 
 
@@ -43,7 +43,7 @@ Installation
 
 Install pyCEA via pip::
 
-   pip install pyCEA
+   pip install PCEA
 
 Usage
 -----
@@ -53,7 +53,7 @@ Here are two quick examples of using pyCEA:
 1. Reading data from a CSV file::
 
    import numpy as np
-   from pyCEA import CEA
+   from PCEA import CEA
    import pandas as pd
 
    # Read data from demo.csv, where columns represent variables and rows represent sampling times.
@@ -64,7 +64,7 @@ Here are two quick examples of using pyCEA:
 
 2. Input a boolean matrix::
 
-   from pyCEA import CEA
+   from PCEA import CEA
    import numpy as np
 
    ts = np.random.choice([True, False], [720, 3])  # Generate a boolean matrix

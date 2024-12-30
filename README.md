@@ -1,17 +1,17 @@
-# pyCEA
+# PCEA
 [![](https://img.shields.io/badge/Host-pyCEA%2FREADME-orange)](https://github.com/Koni2020/pyCEA/blob/master/README.md)
 ![](https://img.shields.io/badge/Python-3.10-blue)
 ![](https://img.shields.io/badge/Status-Building-green)
 ## Catalog
-- [Introduction of pyECA](#what-is-the-pycea)
+- [Introduction of PECA](#what-is-the-pycea)
 - [Installation](#installation)
 - [Dependencies](#dependencies)
 - [Usage](#usage)
 - [Documentation](readme/DOCUMENTATION_CN.md)
 - [README_ZN [Chinese]](readme/README_CN.md)
-## What is the pyCEA?
+## What is the PCEA?
 ![compound events relationship](./readme/compound_events_relationship.svg)
-pyCEA is the abbreviation for Python Compound Event Analysis. 
+PCEA is the abbreviation for Python Compound Event Analysis. 
 Compound events are defined as the superposition of events within a specific time window, exhibiting six types of relationships as illustrated in the figure.
 pyCEA is based on event analysis. It can identify events within signals based on specific thresholds and calculate the occurrence time, intensity, peak, and duration of those events. 
 It can also detect event chains (compound events) and calculate their probabilities. An event chain refers to two events that occur synchronously in time. 
@@ -24,27 +24,28 @@ For the installation of pyECA, the following packages are required:
 
 ## Installation
 pyCEA can be installed using pip\
-```pip install pyCEA```
+```pip install PCEA```
 ## Usage
 Two quick examples of pyCEA usage is as following. 
 1. The data from data/demo.csv is read in, 
 where the columns represent different variables and the rows represent sampling times.
+
 ```python
 import numpy as np
-from pyCEA import CEA
+from PCEA import CEA
 import pandas as pd
 
 # Read the data in data/demo.csv, where the columns represent different 
 # variables and the rows represent sampling times.
 ts = pd.read_csv("./data/demo.csv", index_col=0, header=0)
 ts = ts.iloc[:, [0, 1]]
-cea = CEA(ts, delta=6, threshold=[-np.inf, -0.5]) 
-cea.run_cea(save_path='./data/resuls.xlsx') # run compound event analysis
+cea = CEA(ts, delta=6, threshold=[-np.inf, -0.5])
+cea.run_cea(save_path='./data/resuls.xlsx')  # run compound event analysis
 ```
 2. Input a boolean matrix of size m x n.
 
 ```python
-from pyCEA import CEA
+from PCEA import CEA
 import numpy as np
 
 ts = np.random.choice([True, False], [720, 3]) # Generate a boolean matrix, 

@@ -39,28 +39,28 @@ pyCEA目前支持两种输入数据类型，（1）原始$S_{mn}$信号矩阵,m�
 ```python
 # 导入所需要的库
 import numpy as np
-from pyCEA import CEA
+from PCEA import CEA
 import pandas as pd
 
 # 读入data/demo.csv的数据,该数据列表示不同变量，行代表采样时间。
 ts = pd.read_csv("./data/demo.csv", index_col=0, header=0)
 
-cea = CEA(ts, delta=3, threshold=[-np.inf, -0.5], tau=3) # 关注小于-0.5即干旱部分, 窗口为3的干旱连级
-cea.run_cea() #运行复合事件分析
+cea = CEA(ts, delta=3, threshold=[-np.inf, -0.5], tau=3)  # 关注小于-0.5即干旱部分, 窗口为3的干旱连级
+cea.run_cea()  # 运行复合事件分析
 
-cea.summary() # 输出运行结果到终端
+cea.summary()  # 输出运行结果到终端
 cea.event_trip_info.to_excel("变量单次事件信息.xlsx")
 ```
 
 2 输入一个mxn的 bool 表格或者矩阵。
 
 ```python
-from pyCEA import CEA
+from PCEA import CEA
 import numpy as np
 
-ts = np.random.choice([True, False], [720, 3]) # 生成一个bool矩阵，bool代事件发生
+ts = np.random.choice([True, False], [720, 3])  # 生成一个bool矩阵，bool代事件发生
 
-cea = CEA(ts, delta=3, is_binary_array=True) # 如果输入已经是一个bool矩阵，\
+cea = CEA(ts, delta=3, is_binary_array=True)  # 如果输入已经是一个bool矩阵，\
 # 那么需要设置“is_binary”为TRUE,且不需要提供阈值参数“threshold”
 ```
      
