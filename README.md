@@ -8,7 +8,7 @@
 - [Dependencies](#dependencies)
 - [Usage](#usage)
 - [Documentation](readme/DOCUMENTATION_CN.md)
-- [README_ZN [简体中文]](readme/README_CN.md)
+- [README_ZN [Chinese]](readme/README_CN.md)
 ## What is the pyCEA?
 ![compound events relationship](./readme/compound_events_relationship.svg)
 pyCEA is the abbreviation for Python Compound Event Analysis. 
